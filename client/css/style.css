@@ -162,6 +162,10 @@ p.small {
 	padding-top: 100px;
 }
 
+.home input:focus {
+	outline: none;
+}
+
 input.text {
     width: 230px;
     background: none;
