@@ -9,8 +9,7 @@ var socket = io.connect();
 
 //an action has happened, send it to the
 //server
-function sendAction(a, d)
-{
+function sendAction(a, d) {
 	//console.log('--> ' + a);
 
 	var message = {
@@ -40,13 +39,11 @@ socket.on('message', function(data){
 	getMessage(data);
 })
 
-function unblockUI()
-{
+function unblockUI() {
 	$.unblockUI();
 }
 
-function blockUI(message)
-{
+function blockUI(message) {
 	message = message || 'Waiting...';
 
 	$.blockUI({
@@ -66,8 +63,7 @@ function blockUI(message)
 }
 
 //respond to an action event
-function getMessage( m )
-{
+function getMessage( m ) {
 	var message = m; //JSON.parse(m);
 	var action = message.action;
 	var data = message.data;
@@ -87,7 +83,7 @@ function getMessage( m )
 			break;
 
 		case 'moveCard':
-                        moveCard($("#" + data.id), data.position);
+			moveCard($("#" + data.id), data.position);
 			break;
 
 		case 'initCards':
@@ -95,8 +91,7 @@ function getMessage( m )
 			break;
 
 		case 'createCard':
-			//console.log(data);
-            drawNewCard(data.id, data.text, data.x, data.y, data.rot, data.colour, null);
+			drawNewCard(data.id, data.text, data.x, data.y, data.rot, data.colour, null);
 			break;
 
 		case 'deleteCard':
@@ -117,37 +112,9 @@ function getMessage( m )
 			initColumns(data);
 			break;
 
-		case 'changeTheme':
-			changeThemeTo(data);
-			break;
-
-		case 'join-announce':
-			displayUserJoined(data.sid, data.user_name);
-			break;
-
-		case 'leave-announce':
-			displayUserLeft(data.sid);
-			break;
-
-		case 'initialUsers':
-			displayInitialUsers(data);
-			break;
-
-		case 'nameChangeAnnounce':
-			updateName( message.data.sid, message.data.user_name );
-			break;
-
-		case 'addSticker':
-			addSticker( message.data.cardId, message.data.stickerId );
-			break;
-
-		case 'setBoardSize':
-			resizeBoard( message.data );
-			break;
-
 		default:
 			//unknown message
-			alert('unknown action: ' + JSON.stringify(message));
+			console.error('unknown action: ' + JSON.stringify(message));
 			break;
 	}
 
@@ -158,8 +125,7 @@ $(document).bind('keyup', function(event) {
 	keyTrap = event.which;
 });
 
-function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed)
-{
+function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 	//cards[id] = {id: id, text: text, x: x, y: y, rot: rot, colour: colour};
 
 	var h = '<div id="' + id + '" class="card ' + colour + ' draggable" style="-webkit-transform:rotate(' + rot + 'deg);">\
@@ -168,37 +134,25 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed)
 	<div id="content:' + id + '" class="content stickertarget droppable">' + text + '</div>\
 	</div>';
 
-		var card = $(h);
+	var card = $(h).css({
+		left: x + "px",
+		top: y + "px"
+	});;
 	card.appendTo('#board');
 
-	//@TODO
-	//Draggable has a bug which prevents blur event
-	//http://bugs.jqueryui.com/ticket/4261
-	//So we have to blur all the cards and editable areas when
-	//we click on a card
-	//The following doesn't work so we will do the bug
-	//fix recommended in the above bug report
-	// card.click( function() {
-	// 	$(this).focus();
-	// } );
-
-	card.draggable(
-		{
-			snap: false,
-			snapTolerance: 5,
-			containment: [0,0,2000,2000],
-			stack: ".card",
-			start: function (event, ui) {
-				keyTrap = null;
-			},
-			drag: function (event, ui) {
-				if (keyTrap == 27) {
-					ui.helper.css(ui.originalPosition);
-					return false;
-				}
+	card.draggable({
+		snap: false,
+		stack: ".card",
+		start: function (event, ui) {
+			keyTrap = null;
+		},
+		drag: function (event, ui) {
+			if (keyTrap == 27) {
+				ui.helper.css(ui.originalPosition);
+				return false;
 			}
 		}
-	);
+	});
 
 	//After a drag:
 	card.bind( "dragstop", function(event, ui) {
@@ -216,84 +170,46 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed)
 		sendAction('moveCard', data);
 	});
 
-	card.children(".droppable").droppable(
-		{
-			accept: '.sticker',
-			drop: function( event, ui ) {
-							var stickerId = ui.draggable.attr("id");
-							var cardId = $(this).parent().attr('id');
+	// card.hover(
+	// 	function(){
+	// 		$(this).addClass('hover');
+	// 		$(this).children('.card-icon').fadeIn(10);
+	// 	},
+	// 	function(){
+	// 		$(this).removeClass('hover');
+	// 		$(this).children('.card-icon').fadeOut(150);
+	// 	}
+	//  );
 
-							addSticker( cardId, stickerId );
+	// card.children('.card-icon').hover(
+	// 	function(){
+	// 		$(this).addClass('card-icon-hover');
+	// 	},
+	// 	function(){
+	// 		$(this).removeClass('card-icon-hover');
+	// 	}
+	// );
 
-							var data = { cardId: cardId, stickerId: stickerId };
-							sendAction('addSticker', data);
+	card.children('.delete-card-icon').click(function(){
+		$("#" + id).remove();
+		//notify server of delete
+		sendAction( 'deleteCard' , { 'id': id });
+	});
 
-							//remove hover state to everything on the board to prevent
-							//a jquery bug where it gets left around
-							$('.card-hover-draggable').removeClass('card-hover-draggable');
-						},
-			hoverClass: 'card-hover-draggable'
-		}
-	);
-
-	var speed = Math.floor(Math.random() * 1000);
-	if (typeof(animationspeed) != 'undefined') speed = animationspeed;
-
-
-	card.animate({
-		left: x + "px",
-		top: y + "px"
-	}, speed);
-
-	card.hover(
-		function(){
-			$(this).addClass('hover');
-			$(this).children('.card-icon').fadeIn(10);
-		},
-		function(){
-			$(this).removeClass('hover');
-			$(this).children('.card-icon').fadeOut(150);
-		}
-	 );
-
-	card.children('.card-icon').hover(
-		function(){
-			$(this).addClass('card-icon-hover');
-		},
-		function(){
-			$(this).removeClass('card-icon-hover');
-		}
-	);
-
-	card.children('.delete-card-icon').click(
-		function(){
-			$("#" + id).remove();
-			//notify server of delete
-			sendAction( 'deleteCard' , { 'id': id });
-		}
-	);
-
-	card.children('.content').editable( "/edit-card/" + id,
-		{
-			style   : 'inherit',
-			cssclass   : 'card-edit-form',
-			type      : 'textarea',
-			placeholder   : 'Double Click to Edit.',
-			onblur: 'submit',
-			xindicator: '<img src="/images/ajax-loader.gif">',
-			event: 'dblclick', //event: 'mouseover'
-			callback: onCardChange
-		}
-	);
-
-	//add applicable sticker
-	if (sticker != null)
-		$("#" + id).children('.content').addClass( sticker );
+	card.children('.content').editable( "/edit-card/" + id, {
+		style : 'inherit',
+		cssclass : 'card-edit-form',
+		type : 'textarea',
+		placeholder: 'Double-click to edit',
+		onblur: 'submit',
+		xindicator: '<img src="/images/ajax-loader.gif">',
+		event: 'dblclick', //event: 'mouseover'
+		callback: onCardChange
+	});
 }
 
 
-function onCardChange( text, result )
-{
+function onCardChange( text, result ) {
 	var path = result.target;
 	//e.g. /edit-card/card46156244
 	var id = path.slice(11);
@@ -314,8 +230,7 @@ function moveCard(card, position) {
 //----------------------------------
 // cards
 //----------------------------------
-function createCard( id, text, x, y, rot, colour )
-{
+function createCard( id, text, x, y, rot, colour ) {
 	drawNewCard(id, text, x, y, rot, colour, null);
 
 	var action = "createCard";
@@ -333,8 +248,7 @@ function createCard( id, text, x, y, rot, colour )
 
 }
 
-function randomCardColour()
-{
+function randomCardColour() {
 	var colours = ['yellow', 'green', 'blue', 'white'];
 
 	var i = Math.floor(Math.random() * colours.length);
@@ -343,8 +257,7 @@ function randomCardColour()
 }
 
 
-function initCards( cardArray )
-{
+function initCards( cardArray ) {
 	//first delete any cards that exist
 	$('.card').remove();
 
@@ -375,8 +288,7 @@ function initCards( cardArray )
 //----------------------------------
 
 
-function drawNewColumn (columnName)
-{
+function drawNewColumn (columnName) {
 	var cls = "col";
 	if (totalcolumns == 0)
 	{
@@ -405,8 +317,7 @@ function drawNewColumn (columnName)
 	totalcolumns ++;
 }
 
-function onColumnChange( text, settings )
-{
+function onColumnChange( text, settings ) {
 	var names = Array();
 
 	//Get the names of all the columns
@@ -421,8 +332,7 @@ function onColumnChange( text, settings )
 
 }
 
-function displayRemoveColumn()
-{
+function displayRemoveColumn() {
 	if (totalcolumns <= 0) return false;
 
 	$('.col:last').fadeOut( 150,
@@ -434,8 +344,7 @@ function displayRemoveColumn()
 	totalcolumns --;
 }
 
-function createColumn( name )
-{
+function createColumn( name ) {
 	if (totalcolumns >= 8) return false;
 
 	drawNewColumn( name );
@@ -448,8 +357,7 @@ function createColumn( name )
 	sendAction(action, data);
 }
 
-function deleteColumn()
-{
+function deleteColumn() {
 	if (totalcolumns <= 0) return false;
 
 	displayRemoveColumn();
@@ -462,8 +370,7 @@ function deleteColumn()
 	sendAction(action, data);
 }
 
-function updateColumns( c )
-{
+function updateColumns( c ) {
 	columns = c;
 
 	var action = "updateColumns";
@@ -473,14 +380,12 @@ function updateColumns( c )
 	sendAction(action, data);
 }
 
-function deleteColumns( next )
-{
+function deleteColumns( next ) {
 	//delete all existing columns:
 	$('.col').fadeOut( 'slow', next() );
 }
 
-function initColumns( columnArray )
-{
+function initColumns( columnArray ) {
 	totalcolumns = 0;
 	columns = columnArray;
 
@@ -498,96 +403,6 @@ function initColumns( columnArray )
 
 }
 
-
-//////////////////////////////////////////////////////////
-////////// NAMES STUFF ///////////////////////////////////
-//////////////////////////////////////////////////////////
-
-
-
-function setCookie(c_name,value,exdays)
-{
-var exdate=new Date();
-exdate.setDate(exdate.getDate() + exdays);
-var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-document.cookie=c_name + "=" + c_value;
-}
-
-function getCookie(c_name)
-{
-var i,x,y,ARRcookies=document.cookie.split(";");
-for (i=0;i<ARRcookies.length;i++)
-{
-  x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-  y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-  x=x.replace(/^\s+|\s+$/g,"");
-  if (x==c_name)
-	{
-	return unescape(y);
-	}
-  }
-}
-
-//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////
-
-function calcCardOffset() {
-		var offsets = {};
-		$(".card").each(function() {
-				var card = $(this);
-				$(".col").each(function(i) {
-						var col = $(this);
-						if(col.offset().left + col.outerWidth() > card.offset().left + card.outerWidth() || i === $(".col").size() - 1) {
-								offsets[card.attr('id')] = {
-										col: col,
-										x: ( (card.offset().left - col.offset().left) / col.outerWidth() )
-								}
-								return false;
-						}
-				});
-		});
-		return offsets;
-}
-
-
-//moves cards with a resize of the Board
-//doSync is false if you don't want to synchronize
-//with all the other users who are in this room
-function adjustCard(offsets, doSync) {
-		$(".card").each(function() {
-				var card = $(this);
-				var offset = offsets[this.id];
-				if(offset) {
-						var data = {
-								id: this.id,
-								position: {
-									left: offset.col.position().left + (offset.x * offset.col.outerWidth()),
-									top: parseInt(card.css('top').slice(0,-2))
-								},
-								oldposition: {
-									left: parseInt(card.css('left').slice(0,-2)),
-									top: parseInt(card.css('top').slice(0,-2))
-								}
-						}; //use .css() instead of .position() because css' rotate
-						//console.log(data);
-						if (!doSync)
-						{
-							card.css('left',data.position.left);
-							card.css('top',data.position.top);
-						}
-						else
-						{
-							//note that in this case, data.oldposition isn't accurate since
-							//many moves have happened since the last sync
-							//but that's okay becuase oldPosition isn't used right now
-							moveCard(card, data.position);
-							sendAction('moveCard', data);
-						}
-
-				}
-		});
-}
-
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 
@@ -600,14 +415,29 @@ $(function() {
 	$( "#create-card" )
 		.click(function() {
 			var rotation = Math.random() * 10 - 5; //add a bit of random rotation (+/- 10deg)
-			uniqueID = Math.round(Math.random()*99999999); //is this big enough to assure uniqueness?
+			uniqueID = Date.now() + Math.round(Math.random() * 1000000);
 			//alert(uniqueID);
 			createCard(
 				'card' + uniqueID,
 				'',
-				58, $('#board').height() / 2,// hack - not a great way to get the new card coordinates, but most consistant ATM
-			   rotation,
-			   randomCardColour());
+				20,
+				20,
+				rotation,
+				randomCardColour());
+		});
+
+	$( "#board" )
+		.dblclick(function(e) {
+			var rotation = Math.random() * 10 - 5; //add a bit of random rotation (+/- 10deg)
+			uniqueID = Date.now() + Math.round(Math.random() * 1000000);
+			//alert(uniqueID);
+			createCard(
+				'card' + uniqueID,
+				'',
+				e.pageX - 20,
+				e.pageY - 20,
+				rotation,
+				randomCardColour());
 		});
 
 
