@@ -10,8 +10,8 @@
   "directories": {
     "lib": "lib/"
   },
-  "engines": {
-    "node": "0.4.7"
+  "scripts": {
+    "start": "node server.js"
   },
   "dependencies": {
     "async":        "0.1.x",

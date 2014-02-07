@@ -68,7 +68,7 @@ app.post('/edit-column', function(req, res) {
 	res.send(req.body.value);
 });
 
-app.listen(process.argv[2] || 8124);
+app.listen(process.env.PORT || process.argv[2] || 8124);
 
 //I limit the number of potential transports because xhr was causing trouble
 //with frequent disconnects
@@ -86,7 +86,7 @@ io.configure(function () {
     , 'jsonp-polling'
   ]);
 
-  io.set('log level', 1); 
+  io.set('log level', 1);
 });
 io.sockets.on('connection', function (client) {
 	// new client is here!
@@ -107,24 +107,24 @@ io.sockets.on('connection', function (client) {
 function scrub( text ) {
 	if (typeof text != "undefined" && text !== null)
 	{
-	
+
 		//clip the string if it is too long
 		if (text.length > 65535)
 		{
 			text = text.substr(0,65535);
 		}
-	
+
 		return sanitizer.sanitize(text);
 	}
 	else
 	{
 		return null;
 	}
-}	
-	
-	
-	
-	client.on('message', function( message ){ 
+}
+
+
+
+	client.on('message', function( message ){
 		//console.log(message.action + " -- " + sys.inspect(message.data) );
 
 		if (!message.action)	return;
@@ -304,17 +304,17 @@ function scrub( text ) {
 
 				broadcastToRoom( client, { action: 'addSticker', data: { cardId: cardId, stickerId: stickerId }});
 				break;
-				
+
 			case 'setBoardSize':
 
 				var size = {};
 				size.width = scrub(message.data.width);;
 				size.height = scrub(message.data.height);
-				
+
 				getRoom(client, function(room) {
 					db.setBoardSize( room, size );
 				});
-				
+
 				broadcastToRoom( client, { action: 'setBoardSize', data: size } );
 				break;
 
@@ -376,7 +376,7 @@ function initClient ( client )
 				}
 			);
 		});
-		
+
 		db.getBoardSize( room, function(size) {
 
 			if (size != null) {
