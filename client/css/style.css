@@ -70,28 +70,33 @@ h2 {
 	font-size: 18px;
 	}
 
-.bottom-icon {
-	padding: 5px;
-	opacity: .3;
-}
-
-.bottom-icon:hover {
+#create-card {
 	padding: 5px;
 	opacity: .4;
+	transition: opacity 100ms ease;
+}
+
+#create-card:hover {
+	opacity: .8;
+}
+
+
+#icon-col img {
+	position: absolute;
+	right: 10px;
+	opacity: .1;
+	transition: opacity 100ms ease;
+}
+
+#icon-col img:hover {
+	opacity: .5;
 }
 
 #add-col {
-	position: absolute; right: 3px; top: 200px; display: none; opacity: .15;
+	top: 10px;
 }
-#add-col:hover {
-	opacity: .5;
-}
-
 #delete-col {
-	position: absolute; right: 3px; top: 224px; display: none; opacity: .15;
-}
-#delete-col:hover {
-	opacity: .5;
+	top: 35px;
 }
 
 #config-dropdown {
@@ -111,7 +116,9 @@ h2 {
 }
 
 .buttons {
-	float: left;
+	position: absolute;
+	top: 5px;
+	left: 5px;
 }
 
 

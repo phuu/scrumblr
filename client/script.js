@@ -130,7 +130,6 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 
 	var h = '<div id="' + id + '" class="card ' + colour + ' draggable" style="-webkit-transform:rotate(' + rot + 'deg);">\
 	<img src="/images/icons/token/Xion.png" class="card-icon delete-card-icon" />\
-	<img class="card-image" src="/images/' + colour + '-card.png">\
 	<div id="content:' + id + '" class="content stickertarget droppable">' + text + '</div>\
 	</div>';
 
@@ -169,26 +168,6 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 
 		sendAction('moveCard', data);
 	});
-
-	// card.hover(
-	// 	function(){
-	// 		$(this).addClass('hover');
-	// 		$(this).children('.card-icon').fadeIn(10);
-	// 	},
-	// 	function(){
-	// 		$(this).removeClass('hover');
-	// 		$(this).children('.card-icon').fadeOut(150);
-	// 	}
-	//  );
-
-	// card.children('.card-icon').hover(
-	// 	function(){
-	// 		$(this).addClass('card-icon-hover');
-	// 	},
-	// 	function(){
-	// 		$(this).removeClass('card-icon-hover');
-	// 	}
-	// );
 
 	card.children('.delete-card-icon').click(function(){
 		$("#" + id).remove();
@@ -249,7 +228,7 @@ function createCard( id, text, x, y, rot, colour ) {
 }
 
 function randomCardColour() {
-	var colours = ['yellow', 'green', 'blue', 'white'];
+	var colours = ['yellow', 'green', 'blue', 'white', 'red'];
 
 	var i = Math.floor(Math.random() * colours.length);
 
@@ -300,13 +279,12 @@ function drawNewColumn (columnName) {
 	$('.editable').editable( "/edit-column",
 		{
 			style   : 'inherit',
-			cssclass   : 'card-edit-form',
+			cssclass   : 'column-edit-form',
 			type      : 'textarea',
 			placeholder   : 'New',
 			onblur: 'submit',
 			width: '',
 			height: '',
-			xindicator: '<img src="/images/ajax-loader.gif">',
 			event: 'dblclick', //event: 'mouseover'
 			callback: onColumnChange
 		}
@@ -318,17 +296,16 @@ function drawNewColumn (columnName) {
 }
 
 function onColumnChange( text, settings ) {
-	var names = Array();
+	var names = [];
 
 	//Get the names of all the columns
 	$('.col').each(function() {
 		names.push(
 			$(this).text()
-			);
+		);
 	});
 
 	updateColumns(names);
-
 
 }
 
@@ -440,16 +417,6 @@ $(function() {
 				randomCardColour());
 		});
 
-
-	$('#icon-col').hover(
-		function() {
-			$('.col-icon').fadeIn(10);
-		},
-		function() {
-			$('.col-icon').fadeOut(150);
-		}
-	);
-
 	$('#add-col').click(
 		function(){
 			createColumn('New');
@@ -463,8 +430,6 @@ $(function() {
 			return false;
 		}
 	);
-
-	var user_name = getCookie('scrumscrum-username');
 
 	//disable image dragging
 	window.ondragstart = function() { return false; }
