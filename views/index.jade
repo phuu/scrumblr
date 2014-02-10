@@ -1,9 +1,37 @@
+doctype html
+html(lang="en")
+title= locals.pageTitle
+
+<!-- SCRIPTS -->
+<script src="/bower_components/jquery/jquery.min.js"></script>
+<script src="/bower_components/jquery-ui/ui/jquery-ui.js"></script>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script src="/lib/jquery.jeditable.js"></script>
+
+<script src="/script.js"></script>
+
+<!-- STYLES -->
+<link rel="stylesheet" type="text/css" href="/css/style.css" />
+<link rel="stylesheet" title="cardsize" href="/css/cards.css" type="text/css" media="all" />
+
+<!-- FONTS -->
+<link href='http://fonts.googleapis.com/css?family=Rock+Salt' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Covered+By+Your+Grace' rel='stylesheet' type='text/css'>
+
 div#board
-	table#board-table.board-table
-		tr
-			td#icon-col(width='1%')
-				image#add-col.col-icon(title='New column', width='20', height='20', src='/images/icons/iconic/raster/black/plus_alt_32x32.png')
-				image#delete-col.col-icon(title='Remove column', width='20', height='20', src='/images/icons/iconic/raster/black/minus_alt_32x32.png')
+    table#board-table.board-table
+        tr
+            td#icon-col(width='1%')
+                image#add-col.col-icon(title='New column', width='20', height='20', src='/images/icons/iconic/raster/black/plus_alt_32x32.png')
+                image#delete-col.col-icon(title='Remove column', width='20', height='20', src='/images/icons/iconic/raster/black/minus_alt_32x32.png')
 
 div.buttons
-	image#create-card(title='New post-it', width="24", height="24", src="/images/icons/iconic/raster/black/plus_alt_24x24.png")
+    image#create-card(title='New post-it', width="24", height="24", src="/images/icons/iconic/raster/black/plus_alt_24x24.png")
+
+div.how-to
+    | <strong>Double-click</strong> to add a card.
+
+div.loader-wrapper
+    div.loader Loading&hellip;

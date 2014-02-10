@@ -1,45 +1,39 @@
-var	http = require('http'),
-		express = require('express'),
-		connect = require('connect');
+var	http = require('http');
+var express = require('express');
+var connect = require('connect');
 
-var 	sys = require('sys');
-
-var 	app = express.createServer();
+var sys = require('sys');
 
 var	async = require('async');
 
 var	rooms	= require('./lib/rooms.js');
 var	data	= require('./lib/data.js').db;
 
-var 	sanitizer = require('sanitizer');
+var sanitizer = require('sanitizer');
 
 //Map of sids to user_names
 var sids_to_user_names = [];
 
-app.configure( function(){
-	app.use(express.static(__dirname + '/client'));
-	app.use(express.bodyParser());
-	//app.use(express.cookieParser());
-
-	//Cookies are not really needed... but may be in the future?
-	app.use(express.cookieParser());
-	app.use(
-		express.session({
-			key: "scrumscrum-cookie",
-			secret: "kookoorikoo",
-//			store: session_store,
-			cookie: { path: '/', httpOnly: true, maxAge: 14400000 }
-		})
-	);
-
-
+var db = new data(function() {
+	console.log('db ready');
 });
 
+var app = express();
+var server = app.listen(process.env.PORT || process.argv[2] || 8124, function () {
+	console.log('scrum – http://%s:%s', this.address().address, this.address().port);
+});
+var io = require('socket.io').listen(server);
+
+app.set('views', __dirname + '/views');
+app.set('view engine', 'jade');
+
+app.use(express.logger('dev'));
+app.use(express.static(__dirname + '/client'));
+app.use(express.bodyParser());
+
 app.get('/', function(req, res) {
-	//console.log(req.header('host'));
-	url = req.header('host');
-	res.render('home.jade', {
-		layout: false,
+	var url = req.header('host');
+	res.render('home', {
 		locals: {
 		 	url: url
 		}
@@ -47,64 +41,36 @@ app.get('/', function(req, res) {
 });
 
 app.get('/:id', function(req, res){
-	res.render('index.jade', {
+	console.log('req.params.id', req.params.id);
+	res.render('index', {
 		locals: {
 			pageTitle: 'scrum - ' + req.params.id
 		}
 	});
 });
 
-//SETUP ROUTES
 app.post('/edit-card/:id', function(req, res){
-    //do nothing
 	res.send(req.body.value);
 });
 
 app.post('/edit-column', function(req, res) {
-	//do nothing
 	res.send(req.body.value);
 });
 
-app.listen(process.env.PORT || process.argv[2] || 8124, function () {
-	console.log('scrum – http://%s:%s', this.address().address, this.address().port);
-});
+/**
+ * socket.io
+ */
 
-//I limit the number of potential transports because xhr was causing trouble
-//with frequent disconnects
-var socketio_options = {
-	transports: ['websocket', 'flashsocket', 'jsonp-polling']
-};
-// socket.io SETUP
-var io = require('socket.io').listen(app);
 io.configure(function () {
-  io.set('transports', [
-      'websocket'
-    , 'flashsocket'
-    , 'jsonp-polling'
-  ]);
-
+  io.set('transports', ['websocket', 'flashsocket', 'jsonp-polling']);
   io.set('log level', 1);
 });
+
 io.sockets.on('connection', function (client) {
-	// new client is here!
-	//console.dir(client.request.headers);
-		//
-		// var cookie_string = client.request.headers.cookie;
-		// var parsed_cookies = connect.utils.parseCookie(cookie_string);
-		// console.log('parsed:'); console.dir(parsed_cookies);
-		// var connect_sid = parsed_cookies['scrumscrum-sid'];
-		// if (connect_sid) {
-		//   session_store.get(connect_sid, function (error, session) {
-		// 	 console.log('cookie:');
-		//     console.dir(session);
-		//   });
-		// }
 
+	client.on('message', function (message) {
 
-	client.on('message', function( message ){
-		//console.log(message.action + " -- " + sys.inspect(message.data) );
-
-		if (!message.action)	return;
+		if (!message.action) return;
 
 		switch (message.action) {
 			case 'initializeMe':
@@ -112,13 +78,11 @@ io.sockets.on('connection', function (client) {
 				break;
 
 			case 'joinRoom':
-
 				joinRoom(client, message.data, function(clients) {
 
 						client.json.send( { action: 'roomAccept', data: '' } );
 
 				});
-
 				break;
 
 			case 'moveCard':
@@ -170,7 +134,6 @@ io.sockets.on('connection', function (client) {
 				break;
 
 			case 'editCard':
-
 				var clean_data = {};
 				clean_data.value = scrub(message.data.value);
 				clean_data.id = scrub(message.data.id);
@@ -243,19 +206,6 @@ io.sockets.on('connection', function (client) {
 
 				break;
 
-			case 'changeTheme':
-				var clean_message = {};
-				clean_message.data = scrub(message.data);
-
-				getRoom( client, function(room) {
-					db.setTheme( room, clean_message.data );
-				});
-
-				clean_message.action = 'changeTheme';
-
-				broadcastToRoom( client, clean_message );
-				break;
-
 			case 'setUserName':
 				var clean_message = {};
 
@@ -281,7 +231,6 @@ io.sockets.on('connection', function (client) {
 				break;
 
 			case 'setBoardSize':
-
 				var size = {};
 				size.width = scrub(message.data.width);;
 				size.height = scrub(message.data.height);
@@ -300,11 +249,9 @@ io.sockets.on('connection', function (client) {
 	});
 
 	client.on('disconnect', function() {
-			leaveRoom(client);
+		leaveRoom(client);
 	});
 
-  //tell all others that someone has connected
-  //client.broadcast('someone has connected');
 });
 
 
@@ -338,19 +285,6 @@ function initClient ( client ) {
 			);
 		});
 
-
-		db.getTheme( room, function(theme) {
-
-			if (theme == null) theme = 'bigcards';
-
-			client.json.send(
-				{
-					action: 'changeTheme',
-					data: theme
-				}
-			);
-		});
-
 		db.getBoardSize( room, function(size) {
 
 			if (size != null) {
@@ -376,12 +310,6 @@ function initClient ( client ) {
 				j++;
 			}
 		}
-
-		//console.log('initialusers: ' + roommates);
-		client.json.send({
-			action: 'initialUsers',
-			data: roommates
-		});
 
 	});
 }
@@ -429,8 +357,6 @@ function roundRand( max ) {
 	return Math.floor(Math.random() * max);
 }
 
-
-
 //------------ROOM STUFF
 // Get Room name for the given Session ID
 function getRoom( client , callback ) {
@@ -447,28 +373,6 @@ function setUserName ( client, name ) {
 	console.dir(sids_to_user_names);
 }
 
-function cleanAndInitializeDemoRoom() {
-	// DUMMY DATA
-	db.clearRoom('/demo', function() {
-		db.createColumn( '/demo', 'Not Started' );
-		db.createColumn( '/demo', 'Started' );
-		db.createColumn( '/demo', 'Testing' );
-		db.createColumn( '/demo', 'Review' );
-		db.createColumn( '/demo', 'Complete' );
-
-
-		createCard('/demo', 'card1', 'Hello this is fun', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card2', 'Hello this is a new story.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'white');
-		createCard('/demo', 'card3', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue');
-		createCard('/demo', 'card4', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green');
-
-		createCard('/demo', 'card5', 'Hello this is fun', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card6', 'Hello this is a new card.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card7', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue');
-		createCard('/demo', 'card8', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green');
-	});
-}
-
 //santizes text
 function scrub( text ) {
 	if (typeof text != "undefined" && text !== null) {
@@ -480,12 +384,5 @@ function scrub( text ) {
 	}
 	return null;
 }
-
-
-var db = new data(function() {
-	cleanAndInitializeDemoRoom();
-});
-
-
 
 

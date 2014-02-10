@@ -1,22 +1,17 @@
 var cards = {};
 var totalcolumns = 0;
 var columns = [];
-var currentTheme = "bigcards";
 var boardInitialized = false;
-var keyTrap = null;
 
 var socket = io.connect();
 
 //an action has happened, send it to the
 //server
 function sendAction(a, d) {
-	//console.log('--> ' + a);
-
 	var message = {
 		action: a,
 		data: d
 	}
-
 	socket.json.send ( message );
 }
 
@@ -32,34 +27,22 @@ socket.on('connect', function(){
 
 socket.on('disconnect', function(){
 	blockUI("Server disconnected. Refresh page to try and reconnect...");
-	//$('.blockOverlay').click($.unblockUI);
 });
 
 socket.on('message', function(data){
 	getMessage(data);
 })
 
+
 function unblockUI() {
-	$.unblockUI();
+	$('.loader-wrapper').fadeOut();
 }
 
 function blockUI(message) {
 	message = message || 'Waiting...';
 
-	$.blockUI({
-		message: message,
-
-		css: {
-			border: 'none',
-			padding: '15px',
-			backgroundColor: '#000',
-			'-webkit-border-radius': '10px',
-			'-moz-border-radius': '10px',
-			opacity: .5,
-			color: '#fff',
-			fontSize: '20px'
-		}
-	});
+	$('.loader-wrapper').find('.loader').html(message);
+	$('.loader-wrapper').fadeIn();
 }
 
 //respond to an action event
@@ -100,7 +83,7 @@ function getMessage( m ) {
 			);
 			break;
 
-		case	'editCard':
+		case 'editCard':
 			$("#" + data.id).children('.content:first').text(data.value);
 			break;
 
@@ -121,55 +104,32 @@ function getMessage( m ) {
 
 }
 
-$(document).bind('keyup', function(event) {
-	keyTrap = event.which;
-});
-
 function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 	//cards[id] = {id: id, text: text, x: x, y: y, rot: rot, colour: colour};
 
 	var h = '<div id="' + id + '" class="card ' + colour + ' draggable" style="-webkit-transform:rotate(' + rot + 'deg);">\
 	<img src="/images/icons/token/Xion.png" class="card-icon delete-card-icon" />\
-	<div id="content:' + id + '" class="content stickertarget droppable">' + text + '</div>\
+	<div id="content:' + id + '" class="content">' + text + '</div>\
 	</div>';
 
 	var card = $(h).css({
 		left: x + "px",
 		top: y + "px"
-	});;
+	});
 	card.appendTo('#board');
 
 	card.draggable({
-		snap: false,
 		stack: ".card",
-		start: function (event, ui) {
-			keyTrap = null;
-		},
-		drag: function (event, ui) {
-			if (keyTrap == 27) {
-				ui.helper.css(ui.originalPosition);
-				return false;
-			}
+		stop: function(event, ui) {
+			var data = {
+				id: this.id,
+				position: ui.position
+			};
+			sendAction('moveCard', data);
 		}
 	});
 
-	//After a drag:
-	card.bind( "dragstop", function(event, ui) {
-		if (keyTrap == 27) {
-			keyTrap = null;
-			return;
-		}
-
-		var data = {
-			id: this.id,
-			position: ui.position,
-			oldposition: ui.originalPosition,
-		};
-
-		sendAction('moveCard', data);
-	});
-
-	card.children('.delete-card-icon').click(function(){
+	card.on('click', '.delete-card-icon', function(){
 		$("#" + id).remove();
 		//notify server of delete
 		sendAction( 'deleteCard' , { 'id': id });
@@ -181,8 +141,7 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 		type : 'textarea',
 		placeholder: 'Double-click to edit',
 		onblur: 'submit',
-		xindicator: '<img src="/images/ajax-loader.gif">',
-		event: 'dblclick', //event: 'mouseover'
+		event: 'dblclick',
 		callback: onCardChange
 	});
 }
@@ -285,7 +244,7 @@ function drawNewColumn (columnName) {
 			onblur: 'submit',
 			width: '',
 			height: '',
-			event: 'dblclick', //event: 'mouseover'
+			event: 'dblclick',
 			callback: onColumnChange
 		}
 	);
@@ -417,22 +376,17 @@ $(function() {
 				randomCardColour());
 		});
 
-	$('#add-col').click(
-		function(){
-			createColumn('New');
-			return false;
-		}
-	);
+	$('#add-col').on('click dblclick', function (e) {
+		createColumn('New');
+		e.preventDefault();
+		e.stopPropagation();
+	})
 
-	$('#delete-col').click(
-		function(){
-			deleteColumn();
-			return false;
-		}
-	);
-
-	//disable image dragging
-	window.ondragstart = function() { return false; }
+	$('#delete-col').on('click dblclick', function (e){
+		deleteColumn();
+		e.preventDefault();
+		e.stopPropagation();
+	});
 
 });
 

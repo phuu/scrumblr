@@ -191,15 +191,36 @@ input:hover {
 	font-size: 40px;
 	font-family: 'Covered By Your Grace',"Arial Rounded MT Bold", arial, serif;
 	color: #19ba98;
-	color: black;
-
-	xborder: solid 1px;
-
-
-
 }
 
+.how-to {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	font-size: 0.9em;
+	padding: 0.444em;
+	pointer-events: none;
+	opacity: 0.5;
+}
 
+.loader-wrapper {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,.5);
+}
+
+.loader {
+	color: white;
+	height: 10em;
+	text-align: center;
+	padding: 2.5em;
+	font-size: 1.5em;
+	position: relative;
+}
 
 
 
