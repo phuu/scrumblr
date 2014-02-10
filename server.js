@@ -39,21 +39,18 @@ app.get('/', function(req, res) {
 	//console.log(req.header('host'));
 	url = req.header('host');
 	res.render('home.jade', {
-		 layout: false,
-		 locals: {url: url}
-	});
-});
-
-app.get('/demo', function(req, res) {
-	res.render('index.jade', {
-		locals: {pageTitle: 'scrumblr - demo', demo: true}
+		layout: false,
+		locals: {
+		 	url: url
+		}
 	});
 });
 
 app.get('/:id', function(req, res){
-
 	res.render('index.jade', {
-		locals: {pageTitle: ('scrumblr - ' + req.params.id) }
+		locals: {
+			pageTitle: 'scrum - ' + req.params.id
+		}
 	});
 });
 
@@ -68,12 +65,14 @@ app.post('/edit-column', function(req, res) {
 	res.send(req.body.value);
 });
 
-app.listen(process.env.PORT || process.argv[2] || 8124);
+app.listen(process.env.PORT || process.argv[2] || 8124, function () {
+	console.log('scrum – http://%s:%s', this.address().address, this.address().port);
+});
 
 //I limit the number of potential transports because xhr was causing trouble
 //with frequent disconnects
 var socketio_options = {
-	transports: ['websocket', 'flashsocket', 'htmlfile', 'jsonp-polling']
+	transports: ['websocket', 'flashsocket', 'jsonp-polling']
 };
 // socket.io SETUP
 var io = require('socket.io').listen(app);
@@ -81,8 +80,6 @@ io.configure(function () {
   io.set('transports', [
       'websocket'
     , 'flashsocket'
-    , 'htmlfile'
-//    , 'xhr-polling'
     , 'jsonp-polling'
   ]);
 
@@ -103,34 +100,13 @@ io.sockets.on('connection', function (client) {
 		//   });
 		// }
 
-//santizes text
-function scrub( text ) {
-	if (typeof text != "undefined" && text !== null)
-	{
-
-		//clip the string if it is too long
-		if (text.length > 65535)
-		{
-			text = text.substr(0,65535);
-		}
-
-		return sanitizer.sanitize(text);
-	}
-	else
-	{
-		return null;
-	}
-}
-
-
 
 	client.on('message', function( message ){
 		//console.log(message.action + " -- " + sys.inspect(message.data) );
 
 		if (!message.action)	return;
 
-		switch (message.action)
-		{
+		switch (message.action) {
 			case 'initializeMe':
 				initClient(client);
 				break;
@@ -256,8 +232,7 @@ function scrub( text ) {
 
 				var clean_columns = [];
 
-				for (i in columns)
-				{
+				for (i in columns) {
 					clean_columns[i] = scrub( columns[i] );
 				}
 				getRoom( client, function(room) {
@@ -338,8 +313,7 @@ function scrub( text ) {
 
 
 
-function initClient ( client )
-{
+function initClient ( client ) {
 	//console.log ('initClient Started');
 	getRoom(client, function(room) {
 
@@ -393,32 +367,27 @@ function initClient ( client )
 		roommates = [];
 
 		var j = 0;
-		for (i in roommates_clients)
-		{
-			if (roommates_clients[i].id != client.id)
-			{
+		for (i in roommates_clients) {
+			if (roommates_clients[i].id != client.id) {
 				roommates[j] = {
 					sid: roommates_clients[i].id,
 					user_name:  sids_to_user_names[roommates_clients[i].id]
-					};
+				};
 				j++;
 			}
 		}
 
 		//console.log('initialusers: ' + roommates);
-		client.json.send(
-			{
-				action: 'initialUsers',
-				data: roommates
-			}
-		)
+		client.json.send({
+			action: 'initialUsers',
+			data: roommates
+		});
 
 	});
 }
 
 
-function joinRoom (client, room, successFunction)
-{
+function joinRoom (client, room, successFunction) {
 	var msg = {};
 	msg.action = 'join-announce';
 	msg.data		= { sid: client.id, user_name: client.user_name };
@@ -427,8 +396,7 @@ function joinRoom (client, room, successFunction)
 	successFunction();
 }
 
-function leaveRoom (client)
-{
+function leaveRoom (client) {
 	//console.log (client.id + ' just left');
 	var msg = {};
 	msg.action = 'leave-announce';
@@ -457,8 +425,7 @@ function createCard( room, id, text, x, y, rot, colour ) {
 	db.createCard(room, id, card);
 }
 
-function roundRand( max )
-{
+function roundRand( max ) {
 	return Math.floor(Math.random() * max);
 }
 
@@ -466,24 +433,21 @@ function roundRand( max )
 
 //------------ROOM STUFF
 // Get Room name for the given Session ID
-function getRoom( client , callback )
-{
+function getRoom( client , callback ) {
 	room = rooms.get_room( client );
 	//console.log( 'client: ' + client.id + " is in " + room);
 	callback(room);
 }
 
 
-function setUserName ( client, name )
-{
+function setUserName ( client, name ) {
 	client.user_name = name;
 	sids_to_user_names[client.id] = name;
 	//console.log('sids to user names: ');
 	console.dir(sids_to_user_names);
 }
 
-function cleanAndInitializeDemoRoom()
-{
+function cleanAndInitializeDemoRoom() {
 	// DUMMY DATA
 	db.clearRoom('/demo', function() {
 		db.createColumn( '/demo', 'Not Started' );
@@ -504,7 +468,19 @@ function cleanAndInitializeDemoRoom()
 		createCard('/demo', 'card8', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green');
 	});
 }
-//
+
+//santizes text
+function scrub( text ) {
+	if (typeof text != "undefined" && text !== null) {
+		//clip the string if it is too long
+		if (text.length > 65535) {
+			text = text.substr(0,65535);
+		}
+		return sanitizer.sanitize(text);
+	}
+	return null;
+}
+
 
 var db = new data(function() {
 	cleanAndInitializeDemoRoom();
