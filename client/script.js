@@ -113,8 +113,8 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 	</div>';
 
 	var card = $(h).css({
-		left: x + "px",
-		top: y + "px"
+		left: (x / $(window).width()) * 100 + "%",
+		top: (y / $(window).height()) * 100 + "%"
 	});
 	card.appendTo('#board');
 
@@ -123,7 +123,10 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 		stop: function(event, ui) {
 			var data = {
 				id: this.id,
-				position: ui.position
+				position: {
+					top: (ui.position.top / $(window).height()) * 100,
+					left: (ui.position.left / $(window).width()) * 100
+				}
 			};
 			sendAction('moveCard', data);
 		}
@@ -159,8 +162,8 @@ function onCardChange( text, result ) {
 
 function moveCard(card, position) {
 		card.animate({
-				left: position.left+"px",
-				top: position.top+"px"
+				left: position.left+"%",
+				top: position.top+"%"
 		}, 500);
 }
 
