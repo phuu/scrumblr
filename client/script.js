@@ -113,8 +113,8 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 	</div>';
 
 	var card = $(h).css({
-		left: (x / $(window).width()) * 100 + "%",
-		top: (y / $(window).height()) * 100 + "%"
+		left: x + "%",
+		top: y + "%"
 	});
 	card.appendTo('#board');
 
@@ -129,6 +129,10 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
 				}
 			};
 			sendAction('moveCard', data);
+			$(this).css({
+				top: data.position.top + '%',
+				left: data.position.left + '%'
+			});
 		}
 	});
 
@@ -162,8 +166,8 @@ function onCardChange( text, result ) {
 
 function moveCard(card, position) {
 		card.animate({
-				left: position.left+"%",
-				top: position.top+"%"
+			top: position.top + '%',
+			left: position.left + '%'
 		}, 500);
 }
 
@@ -207,7 +211,6 @@ function initCards( cardArray ) {
 	for (i in cardArray)
 	{
 		card = cardArray[i];
-
 		drawNewCard(
 			card.id,
 			card.text,
@@ -359,8 +362,8 @@ $(function() {
 			createCard(
 				'card' + uniqueID,
 				'',
-				20,
-				20,
+				5,
+				5,
 				rotation,
 				randomCardColour());
 		});
@@ -373,8 +376,8 @@ $(function() {
 			createCard(
 				'card' + uniqueID,
 				'',
-				e.pageX - 20,
-				e.pageY - 20,
+				(e.pageX - 20 / $(window).width()),
+				(e.pageY - 20 / $(window).height()),
 				rotation,
 				randomCardColour());
 		});
