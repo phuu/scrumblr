@@ -193,15 +193,20 @@ input:hover {
 	color: #19ba98;
 }
 
-.how-to {
+.how-to, .bug {
 	position: fixed;
 	bottom: 0;
-	left: 0;
-	right: 0;
 	font-size: 0.9em;
 	padding: 0.444em;
-	pointer-events: none;
+}
+
+.how-to {
 	opacity: 0.5;
+	left: 0;
+	pointer-events: none;
+}
+.bug {
+	right: 0;
 }
 
 .loader-wrapper {
